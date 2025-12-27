@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp AI Agent Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div style="min-height: 100vh; background: linear-gradient(to bottom right, #f0fdf4, #eff6ff); display: flex; align-items: center; justify-content: center;">
+            <div style="text-align: center;">
+                <div style="display: inline-block; animation: spin 1s linear infinite; width: 48px; height: 48px; border: 2px solid #10b981; border-radius: 50%; border-top-color: transparent; margin-bottom: 16px;"></div>
+                <p style="color: #4b5563;">Loading dashboard...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pure JavaScript implementation - no React dependencies needed
+        (function() {
+            const N8N_URL = 'https://gerry1313.app.n8n.cloud/webhook/37e97195-eef6-4572-b3ff-84ff880a7cbc';
+            let stats = null;
+            let autoRefreshInterval = null;
+
+            function fetchStats() {
+                fetch(N8N_URL)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Failed to fetch');
+                        return response.json();
+                    })
+                    .then(data => {
+                        stats = data;
+                        renderDashboard();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        renderError(error.message);
+                    });
+            }
+
+            function renderError(message) {
+                document.getElementById('root').innerHTML = `
+                    <div style="min-height: 100vh; background: linear-gradient(to bottom right, #f0fdf4, #eff6ff); display: flex; align-items: center; justify-content: center; padding: 24px;">
+                        <div style="background: white; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); padding: 32px; max-width: 400px;">
+                            <p style="color: #dc2626; margin-bottom: 16px;">${message}</p>
+                            <button onclick="location.reload()" style="width: 100%; background: #10b981; color: white; padding: 12px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600;">
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function toggleAutoRefresh(enabled) {
+                if (enabled) {
+                    autoRefreshInterval = setInterval(fetchStats, 30000);
+                } else {
+                    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+                }
+            }
+
+            function renderDashboard() {
+                if (!stats) return;
+
+                const maxCount = Math.max(...stats.appointmentsByDay.map(d => d.count));
+
+                document.getElementById('root').innerHTML = `
+                    <div style="min-height: 100vh; background: linear-gradient(to bottom right, #f0fdf4, #eff6ff); padding: 24px;">
+                        <div style="max-width: 1280px; margin: 0 auto;">
+                            <!-- Header -->
+                            <div style="margin-bottom: 32px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                                    <div>
+                                        <h1 style="font-size: 36px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">WhatsApp AI Agent</h1>
+                                        <p style="color: #4b5563; display: flex; align-items: center; gap: 8px;">
+                                            Real-time performance dashboard
+                                            <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 9999px;">
+                                                <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite;"></span>
+                                                Live
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                        <label style="display: flex; align-items: center; gap: 8px; background: white; padding: 8px 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">
+                                            <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh(this.checked)" style="width: 16px; height: 16px;">
+                                            <span style="font-size: 14px; font-weight: 500; color: #374151;">Auto-refresh (30s)</span>
+                                        </label>
+                                        <button onclick="fetchStats()" style="background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px;">
+                                            <span style="width: 20px; height: 20px; display: inline-block;">🔄</span>
+                                            Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stats Grid -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 32px;">
+                                <!-- Booked Appointments -->
+                                <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; border-left: 4px solid #10b981; transition: all 0.3s;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                        <div style="background: #d1fae5; padding: 12px; border-radius: 8px;">
+                                            <span style="font-size: 24px;">📅</span>
+                                        </div>
+                                    </div>
+                                    <h3 style="color: #6b7280; font-size: 14px; font-weight: 500; margin-bottom: 4px;">Booked Appointments</h3>
+                                    <p style="font-size: 36px; font-weight: bold; color: #1f2937; margin: 0;">${stats.bookedAppointments}</p>
+                                </div>
+
+                                <!-- Total Conversations -->
+                                <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; border-left: 4px solid #3b82f6;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                        <div style="background: #dbeafe; padding: 12px; border-radius: 8px;">
+                                            <span style="font-size: 24px;">💬</span>
+                                        </div>
+                                    </div>
+                                    <h3 style="color: #6b7280; font-size: 14px; font-weight: 500; margin-bottom: 4px;">Total Conversations</h3>
+                                    <p style="font-size: 36px; font-weight: bold; color: #1f2937; margin: 0;">${stats.totalConversations}</p>
+                                </div>
+
+                                <!-- Active Users -->
+                                <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; border-left: 4px solid #8b5cf6;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                        <div style="background: #ede9fe; padding: 12px; border-radius: 8px;">
+                                            <span style="font-size: 24px;">👥</span>
+                                        </div>
+                                    </div>
+                                    <h3 style="color: #6b7280; font-size: 14px; font-weight: 500; margin-bottom: 4px;">Active Users</h3>
+                                    <p style="font-size: 36px; font-weight: bold; color: #1f2937; margin: 0;">${stats.activeUsers}</p>
+                                </div>
+
+                                <!-- Avg Response Time -->
+                                <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; border-left: 4px solid #f97316;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                        <div style="background: #ffedd5; padding: 12px; border-radius: 8px;">
+                                            <span style="font-size: 24px;">⏱️</span>
+                                        </div>
+                                    </div>
+                                    <h3 style="color: #6b7280; font-size: 14px; font-weight: 500; margin-bottom: 4px;">Avg Response Time</h3>
+                                    <p style="font-size: 36px; font-weight: bold; color: #1f2937; margin: 0;">${stats.avgResponseTime}</p>
+                                </div>
+                            </div>
+
+                            <!-- Charts Section -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+                                <!-- Appointments by Day -->
+                                <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px;">
+                                    <h2 style="font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 24px;">Appointments This Week</h2>
+                                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                                        ${stats.appointmentsByDay.map(day => `
+                                            <div>
+                                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                                    <span style="color: #6b7280; font-weight: 500;">${day.day}</span>
+                                                    <span style="color: #1f2937; font-weight: bold;">${day.count}</span>
+                                                </div>
+                                                <div style="width: 100%; background: #e5e7eb; border-radius: 9999px; height: 12px;">
+                                                    <div style="background: linear-gradient(to right, #10b981, #059669); height: 12px; border-radius: 9999px; transition: width 0.5s; width: ${(day.count / maxCount) * 100}%;"></div>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                <!-- Recent Appointments -->
+                                <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px;">
+                                    <h2 style="font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 24px;">Recent Appointments</h2>
+                                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                                        ${stats.recentAppointments.map(apt => `
+                                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #f9fafb; border-radius: 8px;">
+                                                <div style="display: flex; align-items: center; gap: 16px;">
+                                                    <div style="padding: 8px; border-radius: 9999px; background: ${apt.status === 'confirmed' ? '#d1fae5' : '#fef3c7'};">
+                                                        <span style="font-size: 20px;">${apt.status === 'confirmed' ? '✅' : '⏳'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <p style="font-weight: 600; color: #1f2937; margin: 0 0 4px 0;">${apt.name}</p>
+                                                        <p style="font-size: 14px; color: #6b7280; margin: 0;">${apt.time}</p>
+                                                    </div>
+                                                </div>
+                                                <span style="padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: ${apt.status === 'confirmed' ? '#d1fae5' : '#fef3c7'}; color: ${apt.status === 'confirmed' ? '#065f46' : '#92400e'};">
+                                                    ${apt.status}
+                                                </span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Conversion Rate -->
+                            <div style="margin-top: 24px; background: linear-gradient(to right, #10b981, #3b82f6); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 32px; color: white;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;">
+                                    <div>
+                                        <h3 style="font-size: 18px; font-weight: 500; margin-bottom: 8px; opacity: 0.9;">Conversion Rate</h3>
+                                        <p style="font-size: 48px; font-weight: bold; margin: 0;">${stats.conversionRate}%</p>
+                                        <p style="margin-top: 8px; opacity: 0.9;">Conversations to appointments</p>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.2); padding: 24px; border-radius: 8px;">
+                                        <span style="font-size: 48px;">📈</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Make functions available globally
+                window.fetchStats = fetchStats;
+                window.toggleAutoRefresh = toggleAutoRefresh;
+            }
+
+            // Initial load
+            fetchStats();
+        })();
+    </script>
+</body>
+</html>
